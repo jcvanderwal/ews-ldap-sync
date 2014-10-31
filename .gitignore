@@ -1,2 +1,6 @@
 /target/
-#/src/main/java/com/ecpnv/sync/Constants.java
+*/Constants.java
+.classpath
+.project
+*.prefs
+/bin/
