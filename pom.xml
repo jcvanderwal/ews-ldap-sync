@@ -31,5 +31,10 @@
 			<artifactId>libphonenumber</artifactId>
 			<version>4.3</version>
 		</dependency>
+		<dependency>
+		    <groupId>org.apache.directory.api</groupId>
+		    <artifactId>api-all</artifactId>
+		    <version>1.0.0-M24</version>
+		</dependency>
 	</dependencies>
 </project>
