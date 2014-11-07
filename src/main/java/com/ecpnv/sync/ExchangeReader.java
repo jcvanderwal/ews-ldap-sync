@@ -15,6 +15,7 @@ import microsoft.exchange.webservices.data.Folder;
 import microsoft.exchange.webservices.data.FolderSchema;
 import microsoft.exchange.webservices.data.FolderView;
 import microsoft.exchange.webservices.data.Item;
+import microsoft.exchange.webservices.data.ItemId;
 import microsoft.exchange.webservices.data.ItemView;
 import microsoft.exchange.webservices.data.PropertySet;
 import microsoft.exchange.webservices.data.WebCredentials;
@@ -28,14 +29,12 @@ public class ExchangeReader
 {
     public List<Contact> readContacts(String folderName)
     {
-        List<Contact> results = new ArrayList<Contact>();
-
         ExchangeService service = new ExchangeService(ExchangeVersion.Exchange2010_SP2);
         ExchangeCredentials credentials = new WebCredentials(Constants.USERNAME, Constants.PASSWORD);
         service.setCredentials(credentials);
         service.setTraceEnabled(true);
         ContactsFolder groupContacts = null;
-        FindItemsResults<Item> items = null;
+        List<Contact> contacts = new ArrayList<Contact>();
 
         try {
             service.setUrl(new URI(Constants.EWS_URI));
@@ -50,27 +49,56 @@ public class ExchangeReader
             FolderView view = new FolderView(10000);
             view.setPropertySet(new PropertySet(BasePropertySet.IdOnly, FolderSchema.DisplayName));
             ArrayList<Folder> folders = publicFoldersRoot.findFolders(view).getFolders();
+            
             for (Folder folder : folders) {
                 if (folder.getDisplayName().equals(folderName)) {
-                    items = folder.findItems(new ItemView(10000));
-                    service.loadPropertiesForItems(items, PropertySet.FirstClassProperties);
-                    System.out.println(items.getTotalCount());
+                    int pageSize = 100;
+                    int offset = 0;
+                    boolean moreItems = true;
+                    ItemView iview = new ItemView(pageSize, offset);
+                    
+                    while (moreItems) {
+                        try {
+                            try {
+                                FindItemsResults<Item> itemsResults = folder.findItems(iview);
+                                service.loadPropertiesForItems(itemsResults, PropertySet.FirstClassProperties);
+                                moreItems = itemsResults.isMoreAvailable();
+                                
+                                for (Item item: itemsResults) {
+                                    if (item instanceof Contact) {
+                                        Contact contact = (Contact) item;
+                                        contacts.add(contact);
+                                    }
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            
+                            if (moreItems) {
+                                iview.setOffset(offset + pageSize);
+                                offset += pageSize;
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            break;
+                        }
+                    }
+                    
                     groupContacts = (ContactsFolder) folder;
                     break;
                 }
             }
 
-            if (groupContacts != null && items != null) {
-                for (Item item : items) {
-                    Contact contact = (Contact) item;
-                    results.add(contact);
-                }
+            if (groupContacts != null && !contacts.isEmpty()) {
+                System.out.println("Contacts size: " + contacts.size());
+                return contacts;
             } else {
                 System.out.println("Group contacts folder not found");
+                return null;
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
         }
-        return results;
     }
 }
