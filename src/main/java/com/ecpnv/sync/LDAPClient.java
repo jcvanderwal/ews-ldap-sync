@@ -9,7 +9,9 @@ import org.apache.directory.api.ldap.model.cursor.EntryCursor;
 import org.apache.directory.api.ldap.model.cursor.SearchCursor;
 import org.apache.directory.api.ldap.model.entry.DefaultEntry;
 import org.apache.directory.api.ldap.model.entry.Entry;
+import org.apache.directory.api.ldap.model.exception.LdapEntryAlreadyExistsException;
 import org.apache.directory.api.ldap.model.exception.LdapException;
+import org.apache.directory.api.ldap.model.exception.LdapInvalidDnException;
 import org.apache.directory.api.ldap.model.message.Response;
 import org.apache.directory.api.ldap.model.message.SearchRequest;
 import org.apache.directory.api.ldap.model.message.SearchRequestImpl;
@@ -31,7 +33,6 @@ public class LDAPClient {
 
     public List<Entry> searchAll() throws CursorException, LdapException {
         List<Entry> results = new ArrayList<Entry>();
-
         EntryCursor cursor = connection.search(BASE, "(objectClass=person)",
                 SearchScope.SUBTREE);
 
@@ -50,10 +51,11 @@ public class LDAPClient {
         return "cn=" + key + "," + BASE;
     }
     
-    public void add(String name, Map<String, String> map) throws LdapException {
+    public void add(String name, Map<String, String> map, Map<String, Exception> invalidList, ArrayList<String> skippedList, int j) throws LdapException {
         String[] objectArray = new String[map.size() + 2];
         objectArray[0] = "ObjectClass: top";
         objectArray[1] = "ObjectClass: organizationalPerson";
+        
         int i = 2;
         
         for (Map.Entry<String, String> entry : map.entrySet()) {
@@ -62,10 +64,17 @@ public class LDAPClient {
             i++;
         }
         
-        connection.add(new DefaultEntry(
-                dnWithKey(name),
-                objectArray
-                ));
+//        System.out.println("Adding " + name);
+        
+        try {
+            connection.add(new DefaultEntry(dnWithKey(name), (Object[])objectArray));
+        } catch (LdapEntryAlreadyExistsException e) {
+            skippedList.add(name);
+            System.out.println(Integer.toString(j) + ": Skipping double entry " + name);
+        } catch (LdapInvalidDnException e) {
+            invalidList.put(name, e);
+            System.out.println(Integer.toString(j) + ": Skipping entry " + name + ":");
+        }
     }
 
     public Entry search(String key) {
@@ -112,6 +121,7 @@ public class LDAPClient {
     public void deleteAll() {
         try {
             List<Entry> allEntries = searchAll();
+            
             for (Entry entry : allEntries) {
                 delete(entry.get("cn").getString());
             }

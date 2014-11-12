@@ -1,10 +1,11 @@
 package com.ecpnv.sync;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
+//import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
 import microsoft.exchange.webservices.data.Contact;
 import microsoft.exchange.webservices.data.PhoneNumberDictionary;
@@ -25,11 +26,18 @@ public class App {
     
     public static void main(String[] args) throws LdapException {
 
-        PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
+        /*
+         * Uncomment when phone validation is implemented
+         *
+         * PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
+         */
         ExchangeReader reader = new ExchangeReader();
         List<Contact> readContacts = reader.readContacts("Group Contacts");
         LDAPClient client = new LDAPClient("10.3.0.201");
 
+        ArrayList<String> skippedList = new ArrayList<String>();
+        Map<String, Exception> invalidList = new HashMap<String, Exception>();
+        
         /*
          * For now, every call to the app removes all entries on the LDAP server
          * and then imports all entries from Exchange again in order to keep
@@ -37,30 +45,23 @@ public class App {
          */
         client.deleteAll();
 
-        Map<String, Integer> keyMap = new HashMap<String, Integer>(); 
+        int i = 0;
+        
         for (Contact contact : readContacts) {
             try {
                 String displayName = contact.getDisplayName();
                 Map<String, String> phoneMap = createPhoneMap(contact);
-//                System.out.println(displayName);
-//                System.out.println(phoneMap.toString());
 
-                for (String key : phoneMap.keySet()) {
-                    if (keyMap.get(key) == null) {
-                        keyMap.put(key, 1);
-                    } else {
-                        int newVal = keyMap.get(key) + 1;
-                        keyMap.put(key, newVal);
-                    }
-                }
-
-                client.add(displayName, phoneMap);
-
+                client.add(displayName, phoneMap, invalidList, skippedList, i);
+                i++;
             } catch (ServiceLocalException e) {
                 e.printStackTrace();
             }
 
         }
+        
+        System.out.println(skippedList.toString());
+        System.out.println(invalidList.toString());
     }
 
     public static Map<String, String> createPhoneMap(Contact contact) {

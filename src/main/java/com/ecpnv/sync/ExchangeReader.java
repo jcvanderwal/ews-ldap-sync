@@ -15,7 +15,6 @@ import microsoft.exchange.webservices.data.Folder;
 import microsoft.exchange.webservices.data.FolderSchema;
 import microsoft.exchange.webservices.data.FolderView;
 import microsoft.exchange.webservices.data.Item;
-import microsoft.exchange.webservices.data.ItemId;
 import microsoft.exchange.webservices.data.ItemView;
 import microsoft.exchange.webservices.data.PropertySet;
 import microsoft.exchange.webservices.data.WebCredentials;
@@ -49,14 +48,14 @@ public class ExchangeReader
             FolderView view = new FolderView(10000);
             view.setPropertySet(new PropertySet(BasePropertySet.IdOnly, FolderSchema.DisplayName));
             ArrayList<Folder> folders = publicFoldersRoot.findFolders(view).getFolders();
-            
+
             for (Folder folder : folders) {
                 if (folder.getDisplayName().equals(folderName)) {
-                    int pageSize = 100;
+                    int pageSize = 1000;
                     int offset = 0;
                     boolean moreItems = true;
                     ItemView iview = new ItemView(pageSize, offset);
-                    
+
                     while (moreItems) {
                         try {
                             try {

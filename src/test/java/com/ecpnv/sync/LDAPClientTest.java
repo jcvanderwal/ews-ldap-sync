@@ -38,7 +38,7 @@ public class LDAPClientTest {
     public void test1Add() throws Exception {
         Map<String, String> testMap = new HashMap<String, String>();
         testMap.put("mobile", "+31 655 12312");
-        client.add(MARC_ALVARES, testMap);
+        client.add(MARC_ALVARES, testMap, null, null, 1);
     }
     
     @Test
@@ -46,7 +46,7 @@ public class LDAPClientTest {
         Map<String, String> testMap = new HashMap<String, String>();
         testMap.put("mobile", "+31 625 259833");
         testMap.put("telephoneNumber", "+31 20 000000");
-        client.add(SANDER_GINN, testMap);
+        client.add(SANDER_GINN, testMap, null, null, 1);
     }
 
     @Test
