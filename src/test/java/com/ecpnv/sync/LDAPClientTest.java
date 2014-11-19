@@ -67,4 +67,13 @@ public class LDAPClientTest {
         //then
         assertNull(client.search(MARC_ALVARES));
     }
+    
+    @Test
+    public void test6GetContact() throws Exception {
+        //when
+        Entry entry = client.search("Sander Ginn");
+        //then
+        assertThat(entry.get("mobile").getString(), is("+31 625 259833"));
+        assertThat(entry.get("telephoneNumber").getString(), is("+31 20 000000"));
+    }
 }

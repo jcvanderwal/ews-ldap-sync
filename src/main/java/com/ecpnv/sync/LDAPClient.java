@@ -55,9 +55,9 @@ public class LDAPClient {
         String[] objectArray = new String[map.size() + 2];
         objectArray[0] = "ObjectClass: top";
         objectArray[1] = "ObjectClass: organizationalPerson";
-        
+
         int i = 2;
-        
+
         for (Map.Entry<String, String> entry : map.entrySet()) {
             String addAttribute = entry.getKey() + ": " + entry.getValue();
             objectArray[i] = addAttribute;
@@ -74,6 +74,9 @@ public class LDAPClient {
         } catch (LdapInvalidDnException e) {
             invalidList.put(name, e);
             System.out.println(Integer.toString(j) + ": Skipping entry " + name + ":");
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.out.println("OOB exception caused by " + name);
+            e.printStackTrace();
         }
     }
 

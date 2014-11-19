@@ -1,11 +1,16 @@
 package com.ecpnv.sync;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 //import com.google.i18n.phonenumbers.PhoneNumberUtil;
+
+
+
+
 
 import microsoft.exchange.webservices.data.Contact;
 import microsoft.exchange.webservices.data.PhoneNumberDictionary;
@@ -33,8 +38,8 @@ public class App {
          */
         ExchangeReader reader = new ExchangeReader();
         List<Contact> readContacts = reader.readContacts("Group Contacts");
-        LDAPClient client = new LDAPClient("10.3.0.201");
 
+        LDAPClient client = new LDAPClient("10.3.0.201");
         ArrayList<String> skippedList = new ArrayList<String>();
         Map<String, Exception> invalidList = new HashMap<String, Exception>();
         
@@ -43,16 +48,20 @@ public class App {
          * and then imports all entries from Exchange again in order to keep
          * everything up to date
          */
+        
+        System.out.println("Deleting");
         client.deleteAll();
-
+        System.out.println("Deleted");
         int i = 0;
         
         for (Contact contact : readContacts) {
             try {
                 String displayName = contact.getDisplayName();
-                Map<String, String> phoneMap = createPhoneMap(contact);
-
-                client.add(displayName, phoneMap, invalidList, skippedList, i);
+                Map<String, String> assetMap = createAssetMap(contact);
+                
+                if (!assetMap.isEmpty()) {
+                    client.add(displayName, assetMap, invalidList, skippedList, i);
+                }
                 i++;
             } catch (ServiceLocalException e) {
                 e.printStackTrace();
@@ -62,20 +71,24 @@ public class App {
         
         System.out.println(skippedList.toString());
         System.out.println(invalidList.toString());
+        
+        System.exit(0);
     }
 
-    public static Map<String, String> createPhoneMap(Contact contact) {
+    /* Creates a map containing all the fields that need to be transferred to the LDAP server */
+    public static Map<String, String> createAssetMap(Contact contact) {
         Map<String, String> map = new HashMap<String, String>();
+        
         try {
             PhoneNumberDictionary phoneDictionary = contact.getPhoneNumbers();
 
             for (PhoneNumberKey key : PhoneNumberKey.values()) {
                 if (phoneDictionary.getPhoneNumber(key) != null &&
-                    (key != PhoneNumberKey.BusinessFax ||
-                    key != PhoneNumberKey.HomeFax ||
-                    key != PhoneNumberKey.OtherFax)) {
-                    if (EXCHANGE_TO_LDAP.containsKey(key)) {
-                        String ldap_key = EXCHANGE_TO_LDAP.get(key);
+                    (!key.equals(PhoneNumberKey.BusinessFax) ||
+                    !key.equals(PhoneNumberKey.HomeFax) ||
+                    !key.equals(PhoneNumberKey.OtherFax))) {
+                    if (EXCHANGE_TO_LDAP.containsKey(key.toString())) {
+                        String ldap_key = EXCHANGE_TO_LDAP.get(key.toString());
                         map.put(ldap_key, phoneDictionary.getPhoneNumber(key).toString());
                     }
                 }
